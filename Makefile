@@ -1,4 +1,11 @@
-paout: src/main.c
+default: paout
+
+clean:
+	rm -rf obj/ paout
+
+obj/main.o: src/main.c
 	mkdir -p obj/
 	gcc -c src/main.c -o obj/main.o
+
+paout: obj/main.o
 	gcc obj/main.o -o paout -lpulse

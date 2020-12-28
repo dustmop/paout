@@ -17,6 +17,20 @@ static char* device_description = NULL;
 
 static int opt_once = 0;
 static int opt_stream = 0;
+static int opt_bars = 0;
+
+
+#define MAX_EST_AUDIO 0.02
+#define MAX_BAR_UNITS 60
+char bar_display[MAX_BAR_UNITS+1];
+
+
+void init_bar_display() {
+    for (int k = 0; k < MAX_BAR_UNITS; k++) {
+        bar_display[k] = '.';
+    }
+    bar_display[MAX_BAR_UNITS] = '\0';
+}
 
 
 void stream_state_callback(pa_stream *s, void *data) {
@@ -51,10 +65,20 @@ void stream_read_callback(pa_stream *s, size_t l, void *data) {
 
     if (pa_ml) {
         float app_result = fabs(*fp);
-        printf("%.5f\n", app_result);
         if (opt_once) {
+            printf("%.5f\n", app_result);
             // Return 1 if no audio
             pa_mainloop_quit(pa_ml, (app_result == 0.0));
+        } else if (opt_bars) {
+            int num_units = MAX_BAR_UNITS * app_result * (1 / MAX_EST_AUDIO);
+            for (int k = 0; k < MAX_BAR_UNITS; k++) {
+                bar_display[k] = (k < num_units) ? 'X' : '.';
+            }
+            printf(" %s\r", bar_display);
+            fflush(stdout);
+        } else {
+            printf("%.5f   \r", app_result);
+            fflush(stdout);
         }
     }
 
@@ -130,6 +154,8 @@ void context_state_callback(pa_context *c, void *data) {
 int output_display() {
     int retval = 0;
 
+    init_bar_display();
+
     pa_ml = pa_mainloop_new();
     assert(pa_ml);
 
@@ -167,12 +193,15 @@ int output_display() {
 int main(int argc, char *argv[]) {
     int c;
     while (1) {
-        c = getopt(argc, argv, "1s");
+        c = getopt(argc, argv, "1sb");
         if (c == -1) { break; }
 
         switch(c) {
         case '1':
             opt_once = 1;
+            break;
+        case 'b':
+            opt_bars = 1;
             break;
         case 's':
             opt_stream = 1;
@@ -180,12 +209,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (!opt_once && !opt_stream) {
+    if (!opt_once && !opt_stream && !opt_bars) {
         printf("paout displays info about pulseaudio output\n");
         printf("\n");
         printf("usage: paout [-1 | -s]\n");
         printf("\n");
         printf("       -1  get 1 value then quit\n");
+        printf("       -b  bar graph to be drawn on stdout\n");
         printf("       -s  stream values continually to stdout\n");
         printf("\n");
         printf("return value is 0 if there is audio, 1 if silent\n");

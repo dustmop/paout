@@ -77,7 +77,7 @@ void stream_read_callback(pa_stream *s, size_t l, void *data) {
             printf(" %s\r", bar_display);
             fflush(stdout);
         } else {
-            printf("%.5f   \r", app_result);
+            printf(" %.5f   \r", app_result);
             fflush(stdout);
         }
     }
@@ -210,19 +210,21 @@ int main(int argc, char *argv[]) {
     }
 
     if (!opt_once && !opt_stream && !opt_bars) {
-        printf("paout displays info about pulseaudio output\n");
+        printf("paout displays pulseaudio output information\n");
         printf("\n");
-        printf("usage: paout [-1 | -s]\n");
+        printf("usage: paout [-1 | -s | b]\n");
         printf("\n");
-        printf("       -1  get 1 value then quit\n");
-        printf("       -b  bar graph to be drawn on stdout\n");
+        printf("       -1  get one value then quit\n");
         printf("       -s  stream values continually to stdout\n");
+        printf("       -b  bar graph drawn continually to stdout\n");
         printf("\n");
         printf("return value is 0 if there is audio, 1 if silent\n");
         exit(2);
     }
-    if (opt_once && opt_stream) {
-        printf("paout: cannot set both -1 and -s flags\n");
+    if ((opt_once && opt_stream) ||
+        (opt_once && opt_bars) ||
+        (opt_bars && opt_stream)) {
+        printf("paout: cannot set more than one of -1, -s, -b flags\n");
         exit(2);
     }
 

@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <pulse/pulseaudio.h>
+#include <wchar.h>
+#include <locale.h>
 
 
 static pa_mainloop *pa_ml = NULL;
@@ -20,16 +22,18 @@ static int opt_stream = 0;
 static int opt_bars = 0;
 
 
+#define FULL_BLOCK_CHAR 0x2588
 #define MAX_EST_AUDIO 0.02
 #define MAX_BAR_UNITS 60
-char bar_display[MAX_BAR_UNITS+1];
+wchar_t bar_display[MAX_BAR_UNITS+1];
 
 
 void init_bar_display() {
+    setlocale(LC_CTYPE, "");
     for (int k = 0; k < MAX_BAR_UNITS; k++) {
-        bar_display[k] = '.';
+        bar_display[k] = L'-';
     }
-    bar_display[MAX_BAR_UNITS] = '\0';
+    bar_display[MAX_BAR_UNITS] = L'\0';
 }
 
 
@@ -72,9 +76,9 @@ void stream_read_callback(pa_stream *s, size_t l, void *data) {
         } else if (opt_bars) {
             int num_units = MAX_BAR_UNITS * app_result * (1 / MAX_EST_AUDIO);
             for (int k = 0; k < MAX_BAR_UNITS; k++) {
-                bar_display[k] = (k < num_units) ? 'X' : '.';
+                bar_display[k] = (k < num_units) ? FULL_BLOCK_CHAR : L'-';
             }
-            printf(" %s\r", bar_display);
+            wprintf(L" %ls\r", bar_display);
             fflush(stdout);
         } else {
             printf(" %.5f   \r", app_result);
